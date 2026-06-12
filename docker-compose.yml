@@ -1,0 +1,105 @@
+# ==============================================================================
+# Docker Compose: Arquitectura Principal de Microservicios
+# Componentes: API Gateway,  Core API, Motor de Búsqueda y Caché
+# ==============================================================================
+include:
+  - docker-compose.mongo.yml
+
+
+
+services:
+  db:
+    image: postgres:18-alpine 
+    container_name: postgres_db_v2
+    restart: always
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data_v2:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:23.0.7
+    container_name: keycloak_auth_v2
+    command: start-dev --import-realm --db=postgres --db-url=jdbc:postgresql://db:5432/${DB_NAME} --db-username=${DB_USER} --db-password=${DB_PASSWORD}
+    env_file:
+      - .env
+    environment:
+      KEYCLOAK_ADMIN: ${KC_ADMIN}
+      KEYCLOAK_ADMIN_PASSWORD: ${KC_ADMIN_PASSWORD}
+    ports:
+      - "8082:8080"  #cambié el puerto
+    volumes:
+      - ./restaurant-system-realm.json:/opt/keycloak/data/import/restaurant-system-realm.json
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: on-failure
+
+  api:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - .env
+    restart: on-failure
+    #para definir cuántas copias por defecto
+    deploy:
+      replicas: 2 
+
+  # Balanceador de carga
+  nginx:
+    image: nginx:alpine
+    container_name: api_gateway
+    ports:
+      - "8000:80" # Nginx sí expone su puerto al mundo (localhost:80)
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - api
+    restart: always
+
+  # para Redis
+  redis:
+    image: redis:alpine
+    container_name: redis_cache
+    ports:
+      - "6379:6379"
+    restart: always
+
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.12.0
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+    ports:
+      - "9200:9200"
+    restart: always
+
+  search-service:
+    build: 
+      context: ./internal/search
+      dockerfile: Dockerfile
+    image: p1-basesii-search-service:1.0.0
+    container_name: search-service
+    env_file:
+      - .env
+    depends_on:
+      - elasticsearch
+    restart: always
+
+volumes:
+  postgres_data_v2:
+    name: restaurant_postgres_data_v2

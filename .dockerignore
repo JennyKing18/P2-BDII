@@ -1,0 +1,15 @@
+Set-Content .dockerignore @"
+.env
+.env.example
+.git
+.gitignore
+.gitattributes
+realm-export.json
+docker-compose.yml
+dockerfile
+Dockerfile
+*.md
+*.json
+*.yml
+*.yaml
+"@

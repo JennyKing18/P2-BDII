@@ -1,0 +1,158 @@
+
+# ==============================================================================
+# Docker Compose: MongoDB Sharded Cluster
+# Arquitectura: 1 Router, 3 Config Servers, 2 Shards con 3 nodos cada uno
+# ==============================================================================
+
+x-mongo-common: &mongo-common
+  image: mongo:8.0
+  restart: unless-stopped
+  depends_on:
+    mongo-init-keyfile:
+      condition: service_completed_successfully
+
+services:
+
+
+  # keyfile
+  mongo-init-keyfile:
+    image: mongo:8.0
+    container_name: mongo-init-keyfile
+    command: >
+      bash -c "
+      if [ ! -f /secrets/keyfile ]; then
+        openssl rand -base64 756 > /secrets/keyfile;
+      fi;
+      chown mongodb:mongodb /secrets/keyfile;
+      chmod 400 /secrets/keyfile;
+      echo 'Keyfile generado con permisos seguros nativos de Linux.';
+      "
+    volumes:
+      - mongo_secrets:/secrets
+
+  # config servers - 3 nodos
+  mongo-config-1:
+    <<: *mongo-common
+    container_name: mongo-config-1
+    command: mongod --config /etc/mongo/configsvr.conf
+    volumes:
+      - ./mongo-cluster/configs/configsvr.conf:/etc/mongo/configsvr.conf:ro
+      - mongo_secrets:/etc/mongo-secrets:ro
+      - config1_data:/data/db
+
+  mongo-config-2:
+    <<: *mongo-common
+    container_name: mongo-config-2
+    command: mongod --config /etc/mongo/configsvr.conf
+    volumes:
+      - ./mongo-cluster/configs/configsvr.conf:/etc/mongo/configsvr.conf:ro
+      - mongo_secrets:/etc/mongo-secrets:ro
+      - config2_data:/data/db
+
+  mongo-config-3:
+    <<: *mongo-common
+    container_name: mongo-config-3
+    command: mongod --config /etc/mongo/configsvr.conf
+    volumes:
+      - ./mongo-cluster/configs/configsvr.conf:/etc/mongo/configsvr.conf:ro
+      - mongo_secrets:/etc/mongo-secrets:ro
+      - config3_data:/data/db
+
+  # shard1 - 3 nodos
+  mongo-shard1-1:
+    <<: *mongo-common
+    container_name: mongo-shard1-1
+    command: mongod --config /etc/mongo/shard1.conf
+    volumes:
+      - ./mongo-cluster/configs/shard1.conf:/etc/mongo/shard1.conf:ro
+      - mongo_secrets:/etc/mongo-secrets:ro
+      - shard1_1_data:/data/db
+
+  mongo-shard1-2:
+    <<: *mongo-common
+    container_name: mongo-shard1-2
+    command: mongod --config /etc/mongo/shard1.conf
+    volumes:
+      - ./mongo-cluster/configs/shard1.conf:/etc/mongo/shard1.conf:ro
+      - mongo_secrets:/etc/mongo-secrets:ro
+      - shard1_2_data:/data/db
+
+  mongo-shard1-3:
+    <<: *mongo-common
+    container_name: mongo-shard1-3
+    command: mongod --config /etc/mongo/shard1.conf
+    volumes:
+      - ./mongo-cluster/configs/shard1.conf:/etc/mongo/shard1.conf:ro
+      - mongo_secrets:/etc/mongo-secrets:ro
+      - shard1_3_data:/data/db
+
+  # shard2 - 3 nodos
+  mongo-shard2-1:
+    <<: *mongo-common
+    container_name: mongo-shard2-1
+    command: mongod --config /etc/mongo/shard2.conf
+    volumes:
+      - ./mongo-cluster/configs/shard2.conf:/etc/mongo/shard2.conf:ro
+      - mongo_secrets:/etc/mongo-secrets:ro
+      - shard2_1_data:/data/db
+
+  mongo-shard2-2:
+    <<: *mongo-common
+    container_name: mongo-shard2-2
+    command: mongod --config /etc/mongo/shard2.conf
+    volumes:
+      - ./mongo-cluster/configs/shard2.conf:/etc/mongo/shard2.conf:ro
+      - mongo_secrets:/etc/mongo-secrets:ro
+      - shard2_2_data:/data/db
+
+  mongo-shard2-3:
+    <<: *mongo-common
+    container_name: mongo-shard2-3
+    command: mongod --config /etc/mongo/shard2.conf
+    volumes:
+      - ./mongo-cluster/configs/shard2.conf:/etc/mongo/shard2.conf:ro
+      - mongo_secrets:/etc/mongo-secrets:ro
+      - shard2_3_data:/data/db
+
+  # router
+  mongo-router:
+    <<: *mongo-common
+    container_name: mongo-router
+    command: mongos --config /etc/mongo/mongos.conf
+    ports:
+      - "27017:27017"
+    volumes:
+      - ./mongo-cluster/configs/mongos.conf:/etc/mongo/mongos.conf:ro
+      - mongo_secrets:/etc/mongo-secrets:ro
+    depends_on:
+      mongo-init-keyfile:
+        condition: service_completed_successfully
+      mongo-config-1:
+        condition: service_started
+      mongo-shard1-1:
+        condition: service_started
+      mongo-shard2-1:
+        condition: service_started
+
+  # el script automático
+  mongo-setup:
+    image: mongo:8.0
+    container_name: mongo-setup
+    volumes:
+      - ./mongo-cluster/setup/init-cluster.sh:/init-cluster.sh
+    entrypoint: [ "bash", "/init-cluster.sh" ]
+    depends_on:
+      - mongo-router
+
+
+volumes:
+  mongo_secrets:
+  config1_data:
+  config2_data:
+  config3_data:
+  shard1_1_data:
+  shard1_2_data:
+  shard1_3_data:
+  shard2_1_data:
+  shard2_2_data:
+  shard2_3_data:

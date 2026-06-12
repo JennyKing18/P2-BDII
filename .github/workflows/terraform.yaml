@@ -1,0 +1,48 @@
+# ==============================================================================
+# CI/CD Pipeline: Despliegue de Infraestructura como Código (IaC)
+# Propósito: Automatizar el aprovisionamiento de recursos en AWS con Terraform
+# ==============================================================================
+name: 'Despliegue de Infraestructura Terraform'
+
+on:
+  push:
+    branches: [ "main", "master" ]
+    # Solo se dispara si hay cambios en la carpeta de terraform o en este workflow
+    paths:
+      - 'terraform/main.tf'
+      - '.github/workflows/terraform.yaml'
+
+jobs:
+  terraform:
+    name: 'Construir Servidor en AWS'
+    runs-on: ubuntu-latest
+    
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+    # para ubicar la carpeta terraform
+    defaults:
+      run:
+        working-directory: ./terraform
+
+    steps:
+    # 1. Descarga el código del repositorio
+    - name: Checkout del código
+      uses: actions/checkout@v3
+
+    # 2. Instala la herramienta Terraform en el corredor de GitHub
+    - name: Instalar Terraform
+      uses: hashicorp/setup-terraform@v2
+
+    # 3. Inicializa Terraform (Conexión al S3 y descarga de providers)
+    - name: Terraform Init
+      run: terraform init
+
+    # 4. Genera el plan de ejecución (Simulacro)
+    - name: Terraform Plan
+      run: terraform plan
+
+    # 5. Aplica los cambios en AWS de forma automática
+    - name: Terraform Apply
+      run: terraform apply -auto-approve

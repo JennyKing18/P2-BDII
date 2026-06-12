@@ -1,0 +1,29 @@
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: restaurant-api
+  labels:
+    app: restaurant-api
+spec:
+  replicas: 3 # clones
+  selector:
+    matchLabels:
+      app: restaurant-api
+  template:
+    metadata:
+      labels:
+        app: restaurant-api
+    spec:
+      containers:
+      - name: api
+      
+        image: ghcr.io/lynu01/p1-basesii/restaurant-api:latest
+        ports:
+        - containerPort: 8080
+        env:
+        
+        - name: DB_DRIVER
+          value: "postgres" #o mongo
+        - name: REDIS_URL
+          value: "redis://redis-service:6379" 

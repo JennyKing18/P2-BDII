@@ -1,0 +1,987 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "API de Gestión de Restaurantes - Tarea 1 Bases II",
+    "description": "API para la gestión de usuarios y restaurantes con integración de Keycloak. \nIncluye lógica de propiedad de recursos y eliminación en cascada.\n",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://virtserver.swaggerhub.com/tec-ca4/Tarea1_BDII/1.0.0",
+      "description": "SwaggerHub API Auto Mocking"
+    },
+    {
+      "url": "http://localhost:8080",
+      "description": "Servidor de desarrollo local"
+    }
+  ],
+  "paths": {
+    "/auth/register": {
+      "post": {
+        "tags": [
+          "Autenticación"
+        ],
+        "summary": "Registrar un nuevo usuario",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/auth_register_body"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Usuario creado correctamente en Keycloak y DB local"
+          },
+          "400": {
+            "description": "Datos inválidos"
+          }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "tags": [
+          "Autenticación"
+        ],
+        "summary": "Iniciar sesión",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/auth_login_body"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Login exitoso, devuelve tokens de Keycloak"
+          },
+          "401": {
+            "description": "Credenciales inválidas"
+          }
+        }
+      }
+    },
+    "/restaurants": {
+      "get": {
+        "tags": [
+          "Restaurantes"
+        ],
+        "summary": "Listar todos los restaurantes",
+        "responses": {
+          "200": {
+            "description": "Lista de restaurantes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Restaurant"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Restaurantes"
+        ],
+        "summary": "Crear un nuevo restaurante",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/restaurants_body"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Restaurante creado y asignado al admin autenticado"
+          },
+          "401": {
+            "description": "No autorizado"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/restaurants/{id}": {
+      "get": {
+        "tags": [
+          "Restaurantes"
+        ],
+        "summary": "Obtener un restaurante por ID",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Detalle del restaurante"
+          },
+          "404": {
+            "description": "No encontrado"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Restaurantes"
+        ],
+        "summary": "Actualizar restaurante (Solo el dueño)",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Restaurante actualizado"
+          },
+          "403": {
+            "description": "No eres el dueño de este restaurante"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "Restaurantes"
+        ],
+        "summary": "Eliminar restaurante (Solo el dueño)",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Restaurante eliminado correctamente"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/users": {
+      "get": {
+        "tags": [
+          "Usuarios"
+        ],
+        "summary": "Listar todos los usuarios",
+        "responses": {
+          "200": {
+            "description": "Lista de usuarios",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/User"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/{id}": {
+      "get": {
+        "tags": [
+          "Usuarios"
+        ],
+        "summary": "Obtener usuario por ID",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Datos del usuario"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Usuarios"
+        ],
+        "summary": "Actualizar perfil de usuario",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usuario actualizado"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "Usuarios"
+        ],
+        "summary": "Eliminar usuario (Eliminación en cascada)",
+        "description": "Si el usuario es 'admin', se eliminan todos sus restaurantes asociados.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usuario y sus restaurantes eliminados"
+          },
+          "404": {
+            "description": "Usuario no encontrado"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/reservations": {
+      "get": {
+        "tags": [
+          "Reservaciones"
+        ],
+        "summary": "Obtener todas las reservaciones",
+        "responses": {
+          "200": {
+            "description": "Lista de reservaciones",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Reservation"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "keycloakAuth": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Reservaciones"
+        ],
+        "summary": "Crear una reservación",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/reservations_body"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Reservación creada"
+          }
+        },
+        "security": [
+          {
+            "keycloakAuth": []
+          }
+        ]
+      }
+    },
+    "/reservations/{id}": {
+      "get": {
+        "tags": [
+          "Reservaciones"
+        ],
+        "summary": "Obtener una reservación por ID",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Detalle de la reservación"
+          }
+        },
+        "security": [
+          {
+            "keycloakAuth": []
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "Reservaciones"
+        ],
+        "summary": "Actualizar reservación",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/reservations_id_body"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Reservación actualizada"
+          }
+        },
+        "security": [
+          {
+            "keycloakAuth": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "Reservaciones"
+        ],
+        "summary": "Eliminar reservación",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Reservación eliminada"
+          }
+        },
+        "security": [
+          {
+            "keycloakAuth": []
+          }
+        ]
+      }
+    },
+    "/menus": {
+      "get": {
+        "tags": [
+          "Menus"
+        ],
+        "summary": "Ver todos los platos disponibles",
+        "responses": {
+          "200": {
+            "description": "Lista de platos obtenida con éxito",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MenuItem"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Menus"
+        ],
+        "summary": "Crea un plato para un restaurante",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/menus_body"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Plato creado con éxito"
+          },
+          "403": {
+            "description": "No eres el dueño del restaurante asociado"
+          }
+        },
+        "security": [
+          {
+            "keycloakAuth": []
+          }
+        ]
+      }
+    },
+    "/menus/{id}": {
+      "get": {
+        "tags": [
+          "Menus"
+        ],
+        "summary": "Ver detalle de un solo plato",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Detalle del plato obtenido con éxito",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MenuItem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Plato no encontrado"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Menus"
+        ],
+        "summary": "Actualiza un plato existente",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MenuItem"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Plato actualizado con éxito"
+          },
+          "403": {
+            "description": "Permisos insuficientes para editar este plato"
+          }
+        },
+        "security": [
+          {
+            "keycloakAuth": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "Menus"
+        ],
+        "summary": "Elimina un plato y desasocia órdenes",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Plato eliminado y órdenes desvinculadas (Set Null) con éxito"
+          }
+        },
+        "security": [
+          {
+            "keycloakAuth": []
+          }
+        ]
+      }
+    },
+    "/orders": {
+      "post": {
+        "tags": [
+          "Orders"
+        ],
+        "summary": "Crea una nueva orden",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/orders_body"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Orden creada con éxito"
+          },
+          "404": {
+            "description": "El plato seleccionado no existe"
+          }
+        },
+        "security": [
+          {
+            "keycloakAuth": []
+          }
+        ]
+      }
+    },
+    "/orders/{id}/status": {
+      "put": {
+        "tags": [
+          "Orders"
+        ],
+        "summary": "Actualiza el estado de una orden",
+        "description": "Permite a dueños cambiar a 'ready' o 'completed', y a clientes 'cancelled'.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/id_status_body"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Estado de la orden actualizado con éxito"
+          },
+          "403": {
+            "description": "No tienes permisos para asignar este estado o la orden ya no es editable"
+          }
+        },
+        "security": [
+          {
+            "keycloakAuth": []
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "User": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "example": 1
+          },
+          "username": {
+            "type": "string",
+            "example": "admin1"
+          },
+          "email": {
+            "type": "string",
+            "example": "admin1@test.com"
+          },
+          "role": {
+            "type": "string",
+            "example": "admin",
+            "enum": [
+              "admin",
+              "client"
+            ]
+          }
+        }
+      },
+      "Restaurant": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "example": 1
+          },
+          "name": {
+            "type": "string",
+            "example": "Sushi House"
+          },
+          "address": {
+            "type": "string",
+            "example": "Calle 1, San José"
+          },
+          "description": {
+            "type": "string",
+            "example": "Comida japonesa tradicional"
+          },
+          "admin_id": {
+            "type": "integer",
+            "description": "ID del usuario administrador dueño del local",
+            "example": 1
+          }
+        }
+      },
+      "Reservation": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "example": 1
+          },
+          "user_id": {
+            "type": "integer",
+            "example": 2
+          },
+          "restaurant_id": {
+            "type": "integer",
+            "example": 1
+          },
+          "date": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-03-27T19:00:00Z"
+          },
+          "status": {
+            "type": "string",
+            "example": "pending",
+            "enum": [
+              "confirmed",
+              "cancelled",
+              "pending"
+            ]
+          }
+        }
+      },
+      "MenuItem": {
+        "required": [
+          "name",
+          "price",
+          "restaurant_id"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "ID único del plato (autogenerado por la DB)."
+          },
+          "restaurant_id": {
+            "type": "integer",
+            "description": "ID del restaurante al que pertenece el plato."
+          },
+          "name": {
+            "type": "string",
+            "description": "Nombre del plato (ej. Casado, Pizza, etc)."
+          },
+          "description": {
+            "type": "string",
+            "description": "Descripción opcional de los ingredientes o detalles."
+          },
+          "price": {
+            "type": "number",
+            "description": "Precio del plato.",
+            "format": "float"
+          }
+        }
+      },
+      "Order": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "ID único de la orden."
+          },
+          "user_id": {
+            "type": "integer",
+            "description": "ID del usuario que realizó el pedido."
+          },
+          "menu_item_id": {
+            "type": "integer",
+            "description": "ID del plato solicitado."
+          },
+          "restaurant_id": {
+            "type": "integer",
+            "description": "ID del restaurante donde se hizo el pedido (extraído del plato)."
+          },
+          "total": {
+            "type": "number",
+            "description": "Costo total de la orden.",
+            "format": "float"
+          },
+          "status": {
+            "type": "string",
+            "description": "Estado actual del flujo del pedido.",
+            "enum": [
+              "pending",
+              "ready_for_pickup",
+              "completed",
+              "cancelled"
+            ]
+          },
+          "menu_item": {
+            "$ref": "#/components/schemas/MenuItem"
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string",
+            "example": "Usuario no encontrado"
+          }
+        }
+      },
+      "auth_register_body": {
+        "required": [
+          "email",
+          "password",
+          "role",
+          "username"
+        ],
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "admin",
+              "client"
+            ]
+          }
+        }
+      },
+      "auth_login_body": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          }
+        }
+      },
+      "restaurants_body": {
+        "required": [
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "address": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          }
+        }
+      },
+      "reservations_body": {
+        "required": [
+          "date",
+          "restaurant_id"
+        ],
+        "type": "object",
+        "properties": {
+          "restaurant_id": {
+            "type": "integer"
+          },
+          "date": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "reservations_id_body": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "confirmed",
+              "cancelled",
+              "pending"
+            ]
+          },
+          "date": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "menus_body": {
+        "required": [
+          "name",
+          "price",
+          "restaurant_id"
+        ],
+        "type": "object",
+        "properties": {
+          "restaurant_id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "price": {
+            "type": "number",
+            "format": "float"
+          }
+        }
+      },
+      "orders_body": {
+        "required": [
+          "menu_item_id"
+        ],
+        "type": "object",
+        "properties": {
+          "menu_item_id": {
+            "type": "integer"
+          }
+        }
+      },
+      "id_status_body": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "ready_for_pickup",
+              "completed",
+              "cancelled"
+            ]
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "keycloakAuth": {
+        "type": "oauth2",
+        "description": "Configuración requerida en Keycloak:\n1. Crear un Client Scope llamado `realm-roles`.\n2. Configurar un Mapper tipo `User Realm Role` con Token Claim Name: `roles` (o el que use tu middleware).\n3. Asignar los roles `admin` o `client` a los usuarios.\n",
+        "flows": {
+          "password": {
+            "tokenUrl": "http://localhost:8081/realms/restaurant-system/protocol/openid-connect/token",
+            "scopes": {
+              "openid": "Acceso básico"
+            }
+          }
+        }
+      }
+    }
+  }
+}

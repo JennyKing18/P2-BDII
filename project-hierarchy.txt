@@ -1,0 +1,66 @@
+P1-BASESII
+├─ .dockerignore
+├─ .env
+├─ .env.example
+├─ .github
+│  └─ workflows
+│     └─ ci-cd.yaml
+├─ .gitignore
+├─ cmd
+│  └─ main.go
+├─ doc
+│  ├─ Guia_Comandos.md
+│  └─ redisD.png
+├─ docker-compose.mongo.yml
+├─ docker-compose.yml
+├─ dockerfile
+├─ go.mod
+├─ go.sum
+├─ internal
+│  ├─ cache
+│  │  └─ cache.go
+│  ├─ database
+│  │  ├─ database.go
+│  │  ├─ factory.go
+│  │  └─ mongo.go
+│  ├─ handlers
+│  │  ├─ menu_handler.go
+│  │  ├─ order_handler.go
+│  │  ├─ reservation_handler.go
+│  │  ├─ restaurant_handler.go
+│  │  └─ user_handler.go
+│  ├─ keycloak
+│  │  └─ keycloak.go
+│  ├─ models
+│  │  └─ models.go
+│  ├─ repository
+│  │  ├─ interface.go
+│  │  ├─ mongo
+│  │  │  ├─ entities.go
+│  │  │  └─ repos.go
+│  │  └─ postgres
+│  │     ├─ entities.go
+│  │     └─ repos.go
+│  └─ search
+│     ├─ Dockerfile
+│     ├─ elastic.go
+│     ├─ go.mod
+│     ├─ go.sum
+│     ├─ handler.go
+│     ├─ main.go
+│     └─ models.go
+├─ mongo-cluster
+│  ├─ configs
+│  │  ├─ configsvr.conf
+│  │  ├─ mongos.conf
+│  │  ├─ shard1.conf
+│  │  └─ shard2.conf
+│  ├─ keyfile
+│  └─ setup
+│     └─ init-cluster.sh
+├─ nginx
+│  └─ nginx.conf
+├─ project-hierarchy.txt
+├─ README.md
+├─ restaurant-system-realm.json
+└─ start-project.sh

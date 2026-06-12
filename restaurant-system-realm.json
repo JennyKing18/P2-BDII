@@ -1,0 +1,22 @@
+{
+  "id": "restaurant-system",
+  "realm": "restaurant-system",
+  "enabled": true,
+  "roles": {
+    "realm": [
+      { "name": "admin" },
+      { "name": "client" }
+    ]
+  },
+  "users": [
+    {
+      "username": "admin",
+      "enabled": true,
+      "credentials": [
+        { "type": "password", "value": "123", "temporary": false }
+      ],
+      "realmRoles": ["admin"],
+      "requiredActions": []
+    }
+  ]
+}
