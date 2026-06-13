@@ -100,6 +100,21 @@ services:
       - elasticsearch
     restart: always
 
+  # Spark / PySpark para procesamiento OLAP (analisis de spark/jobs)
+  spark:
+    image: jupyter/pyspark-notebook:spark-3.5.0
+    container_name: spark_p2
+    ports:
+      - "8888:8888"                     # Jupyter Lab
+    volumes:
+      - ./spark:/home/jovyan/work       # jobs y notebooks visibles dentro del contenedor
+    environment:
+      - JUPYTER_ENABLE_LAB=yes
+    command: start-notebook.sh --NotebookApp.token=''
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
 volumes:
   postgres_data_v2:
     name: restaurant_postgres_data_v2

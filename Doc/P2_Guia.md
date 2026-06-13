@@ -28,5 +28,22 @@ datos*, y eso es justo lo que ya tenemos como filas:
 El cargador de grafo solo necesita la data y sus relaciones; no le importa que
 GORM no las maneje.
 
+# ⚙️ Guía de Comandos
+```
+# 1. Crear el esquema de salida una vez (Spark crea tablas, no esquemas)
+docker exec -it postgres_db_v2 psql -U <user> -d <db> -c "CREATE SCHEMA IF NOT EXISTS analytics;"
+
+# 2. Levantar Spark
+docker compose -f docker-compose.p2.yml up -d spark
+
+# 3. Correr el análisis (la 1ra vez baja el driver JDBC de Maven — tarda ~1 min)
+docker exec -it spark_p2 python /home/jovyan/work/jobs/tendencias_consumo.py `
+  --url jdbc:postgresql://host.docker.internal:5432/<db> `
+  --usuario <user> --clave <pass>
+```
+
+## 📗Dependencias (mas adelante mover al docker para tenerlo automatico)
+- py -m pip install psycopg2-binary
+- py -m pip install pyspark
 
 
