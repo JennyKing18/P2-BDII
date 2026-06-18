@@ -1,5 +1,15 @@
 # ⚙️ Updates P2
+## Profiles Docker Compose
+```
+Diario (app + analytics, sin los 11 nodos de Mongo) — usa el default del .env
+docker compose up -d
 
+# Solo analítica (db + spark + metabase)
+docker compose --profile analytics up -d 
+
+# todos los demas servicios son parte de --profile app
+
+```
 # ⚙️⚡ Guía de Comandos Spark
 Primero levante el proyecto desde 0 sin volumenes
 ```
