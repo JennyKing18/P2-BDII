@@ -1,19 +1,15 @@
 """
 schema.py — Extensiones de esquema del Proyecto 2 (idempotentes).
 
-Aqui vive TODO el DDL que el P2 agrega sobre la base del P1:
+DataDefinitionLanguage (DDL) agrega sobre la base del P1:
   - columnas de geolocalizacion en users y restaurants
   - tablas nuevas: repartidores y recomendaciones
-
-Decision de diseno: estas estructuras NO se agregan al modelo de dominio Go.
-El app Go es el sistema OLTP de origen y se mantiene intacto; estas son
-extensiones de la capa analitica del P2 (las consumen Spark, Neo4j y el modulo
-de enrutamiento, no la API). GORM AutoMigrate es aditivo: ignora columnas y
-tablas que no conoce, asi que la API sigue funcionando igual.
 """
 
-# DDL idempotente: se puede correr multiples veces sin error.
 DDL_P2 = """
+-- Esquema de salida para los resultados de Spark/OLAP
+CREATE SCHEMA IF NOT EXISTS analytics;
+
 -- Geolocalizacion sobre entidades existentes (la API las ignora)
 ALTER TABLE users
     ADD COLUMN IF NOT EXISTS latitud  DOUBLE PRECISION,
@@ -50,14 +46,8 @@ CREATE TABLE IF NOT EXISTS recomendaciones (
 
 def aplicar_esquema(cur):
     """
-    Aplica las extensiones de esquema del P2.
-
-    Entradas:
-        cur: cursor psycopg2 activo.
-    Salidas:
-        Ninguna.
-    Funcionamiento:
-        Ejecuta el DDL idempotente (IF NOT EXISTS): es seguro correrlo en cada
-        ejecucion del seed. No hace commit.
+    F: Aplica las extensiones de esquema del P2.
+    E: cur: cursor psycopg2 activo.
+    S: -    
     """
     cur.execute(DDL_P2)

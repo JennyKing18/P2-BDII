@@ -4,7 +4,7 @@ generadores.py — Generadores de datos por entidad.
 Cada funcion construye y devuelve listas de filas listas para insertar (tuplas
 en el orden de columnas del INSERT correspondiente en main.py). No tocan la
 base directamente, salvo actualizar_geo_existentes, que modifica filas
-preexistentes. La "forma" realista (geo, fechas) viene de dominio.py.
+preexistentes.
 """
 import random
 from datetime import timedelta
@@ -20,16 +20,9 @@ ESTADOS_RESERVA = ["confirmed"] * 70 + ["cancelled"] * 15 + ["pending"] * 15
 
 def actualizar_geo_existentes(cur):
     """
-    Asigna zona y coordenadas a los usuarios que aun no las tienen.
-
-    Entradas:
-        cur: cursor psycopg2 activo.
-    Salidas:
-        int: cantidad de usuarios actualizados.
-    Funcionamiento:
-        Los usuarios creados por la API antes del seed no tienen geo. Se les
-        asigna una zona aleatoria y un punto dentro de ella para que entren en
-        los analisis por ubicacion sin quedar nulos.
+    F: Asigna zona y coordenadas a los usuarios que aun no las tienen.
+    E: cur: cursor psycopg2 activo.
+    S: int: cantidad de usuarios actualizados.    
     """
     cur.execute("SELECT id FROM users WHERE latitud IS NULL")
     ids = [fila[0] for fila in cur.fetchall()]
@@ -45,14 +38,13 @@ def actualizar_geo_existentes(cur):
 
 def generar_restaurantes_y_menus(uid, rid, mid, n_restaurantes):
     """
-    Genera restaurantes, su usuario admin y sus items de menu.
-
-    Entradas:
+    F: Genera restaurantes, su usuario admin y sus items de menu.
+    E:
         uid (int): primer id de usuario libre.
         rid (int): primer id de restaurante libre.
         mid (int): primer id de menu_item libre.
         n_restaurantes (int): cuantos restaurantes crear.
-    Salidas:
+    S:
         dict con:
             'admins'         list[tuple]              filas para users (admin)
             'restaurantes'   list[tuple]              filas para restaurants
@@ -60,12 +52,6 @@ def generar_restaurantes_y_menus(uid, rid, mid, n_restaurantes):
             'items_por_rest' dict[int, list[tuple]]   rid -> [(item_id, precio)]
             'rest_ids'       list[int]                ids de restaurantes creados
             'uid_siguiente'  int                      siguiente id de usuario libre
-    Funcionamiento:
-        Cada restaurante recibe un admin propio y entre 4 y 7 categorias, con
-        hasta 2 platos por categoria. Restaurante y admin comparten zona y se
-        crean con fecha anterior a INICIO (existen antes de la actividad).
-        items_por_rest se devuelve para que el generador de ordenes elija
-        platos validos del restaurante correcto (clave para la co-compra).
     """
     admins, restaurantes, menus = [], [], []
     items_por_rest, rest_ids = {}, []
@@ -101,18 +87,14 @@ def generar_restaurantes_y_menus(uid, rid, mid, n_restaurantes):
 
 def generar_clientes(uid, n_clientes):
     """
-    Genera usuarios con rol 'client'.
-
-    Entradas:
+    F: Genera usuarios con rol 'client'.
+    E:
         uid (int): primer id de usuario libre.
         n_clientes (int): cuantos clientes crear.
-    Salidas:
+    S:
         dict con:
             'clientes'     list[tuple]  filas para users
-            'clientes_ids' list[int]    ids generados (para ordenes/reservas)
-    Funcionamiento:
-        Cada cliente recibe zona, coordenadas y una fecha de alta dispersa en
-        los 5 meses previos a INICIO.
+            'clientes_ids' list[int]    ids generados (para ordenes/reservas)    
     """
     clientes, clientes_ids = [], []
     for i in range(n_clientes):
@@ -128,22 +110,15 @@ def generar_clientes(uid, n_clientes):
 
 def generar_ordenes(oid, clientes_ids, rest_ids, items_por_rest, n_sesiones):
     """
-    Genera ordenes agrupadas en "sesiones" de compra.
-
-    Entradas:
+    F: Genera ordenes agrupadas en "sesiones" de compra.
+    E:
         oid (int): primer id de orden libre.
         clientes_ids (list[int]): ids de clientes.
         rest_ids (list[int]): ids de restaurantes.
         items_por_rest (dict): rid -> [(item_id, precio)].
         n_sesiones (int): cuantas sesiones de compra simular.
-    Salidas:
+    S:
         list[tuple]: filas para orders.
-    Funcionamiento:
-        Cada sesion = un cliente + un restaurante + un instante, con 1 a 4
-        items comprados juntos (sesgado a 1-2). Que varios items compartan
-        cliente/restaurante/momento es lo que habilita el analisis de co-compra
-        en Neo4j. El P1 no tiene ordenes multi-item, asi que la "sesion" es
-        nuestra definicion operativa de "comprados juntos".
     """
     ordenes = []
     for _ in range(n_sesiones):
@@ -163,18 +138,13 @@ def generar_ordenes(oid, clientes_ids, rest_ids, items_por_rest, n_sesiones):
 
 def generar_reservas(vid, clientes_ids, rest_ids, n_reservas):
     """
-    Genera reservaciones.
-
-    Entradas:
+    F: Genera reservaciones.
+    E:
         vid (int): primer id de reserva libre.
         clientes_ids (list[int]): ids de clientes.
         rest_ids (list[int]): ids de restaurantes.
         n_reservas (int): cuantas reservas crear.
-    Salidas:
-        list[tuple]: filas para reservations.
-    Funcionamiento:
-        created_at es cuando se hizo la reserva (sesgado a horas pico); date es
-        la fecha reservada, 1 a 14 dias despues.
+    S: list[tuple]: filas para reservations.
     """
     reservas = []
     for _ in range(n_reservas):
@@ -189,15 +159,9 @@ def generar_reservas(vid, clientes_ids, rest_ids, n_reservas):
 
 def generar_repartidores(n_repartidores):
     """
-    Genera repartidores con base geografica.
-
-    Entradas:
-        n_repartidores (int): cuantos repartidores crear.
-    Salidas:
-        list[tuple]: filas para repartidores (sin id; la tabla usa BIGSERIAL).
-    Funcionamiento:
-        Cada repartidor tiene zona y punto de partida dentro de ella, que el
-        modulo de enrutamiento usa como origen de la ruta.
+    F: Genera repartidores con base geografica.
+    E: n_repartidores (int): cuantos repartidores crear.
+    S: list[tuple]: filas para repartidores (sin id; la tabla usa BIGSERIAL).    
     """
     repartidores = []
     for i in range(n_repartidores):
@@ -209,18 +173,11 @@ def generar_repartidores(n_repartidores):
 
 def generar_recomendaciones(clientes_ids, n_recomendaciones):
     """
-    Genera relaciones de recomendacion usuario -> usuario.
-
-    Entradas:
+    F: Genera relaciones de recomendacion usuario -> usuario.
+    E:
         clientes_ids (list[int]): ids de clientes candidatos.
         n_recomendaciones (int): cuantas relaciones unicas generar.
-    Salidas:
-        list[tuple]: filas para recomendaciones (sin id; BIGSERIAL).
-    Funcionamiento:
-        Toma pares distintos de clientes hasta juntar n relaciones unicas (un
-        set evita duplicados origen->destino). Insumo del analisis "usuarios
-        que recomiendan a otros" en Neo4j. El objetivo se acota al maximo de
-        pares posibles por si n excede las combinaciones disponibles.
+    S: list[tuple]: filas para recomendaciones (sin id; BIGSERIAL).
     """
     pares = set()
     objetivo = min(n_recomendaciones, len(clientes_ids) * (len(clientes_ids) - 1))

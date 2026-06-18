@@ -1,10 +1,6 @@
 """
 dominio.py — Conocimiento del dominio para generar datos realistas.
-
-Reune las constantes (zonas, categorias, platos, pesos temporales) y las
-funciones que producen valores con forma creible: un punto geografico dentro
-de una zona y una fecha sesgada hacia horas pico y meses recientes. Tener esto
-en un solo lugar mantiene los datos coherentes.
+Reune las constantes (zonas, categorias, platos, pesos temporales)
 """
 import random
 from datetime import datetime, timedelta
@@ -53,15 +49,9 @@ PESO_DIA = [7, 6, 7, 8, 12, 14, 10]
 
 def punto_en(zona):
     """
-    Genera un punto (lat, lon) disperso alrededor del centro de una zona.
-
-    Entradas:
-        zona (str): clave existente en ZONAS.
-    Salidas:
-        tuple[float, float]: (latitud, longitud), ~+/-2km de dispersion.
-    Funcionamiento:
-        Suma ruido uniforme pequeno al centro de la zona para que los puntos
-        no caigan todos encima. Redondea a 6 decimales.
+    F: Genera un punto (lat, lon) disperso alrededor del centro de una zona.
+    E: zona (str): clave existente en ZONAS.
+    S: tuple[float, float]: (latitud, longitud)
     """
     lat, lon = ZONAS[zona]
     return (round(lat + random.uniform(-0.02, 0.02), 6),
@@ -70,18 +60,9 @@ def punto_en(zona):
 
 def fecha_aleatoria():
     """
-    Genera una fecha/hora sesgada hacia meses recientes y horas pico.
-
-    Entradas:
-        Ninguna.
-    Salidas:
-        datetime dentro de la ventana [INICIO, FIN].
-    Funcionamiento:
-        - Mes: rechazo proporcional a un factor de crecimiento lineal, asi los
-          meses recientes acumulan mas eventos (tendencia creciente).
-        - Dia: con cierta probabilidad empuja la fecha hacia el viernes para
-          reforzar el peso de fin de semana.
-        - Hora: muestreo ponderado por PESO_HORA (picos de comida).
+    F: Genera una fecha/hora sesgada hacia meses recientes y horas pico.
+    E: -
+    S: datetime dentro de la ventana [INICIO, FIN].
     """
     while True:
         dia = random.randint(0, DIAS_TOTALES - 1)

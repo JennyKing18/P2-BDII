@@ -12,15 +12,9 @@ PAQUETE_JDBC = "org.postgresql:postgresql:42.7.3"
 
 def crear_sesion(nombre="P2-Spark"):
     """
-    Crea (o reutiliza) una SparkSession con el driver JDBC de Postgres.
-
-    Entradas:
-        nombre (str): nombre de la aplicacion Spark.
-    Salidas:
-        SparkSession lista para leer/escribir por JDBC.
-    Funcionamiento:
-        spark.jars.packages hace que Spark baje el driver de Postgres desde
-        Maven la primera vez (requiere internet en el contenedor).
+    F: Crea (o reutiliza) una SparkSession con el driver JDBC de Postgres.
+    E: nombre (str): nombre de la aplicacion Spark.
+    S: SparkSession lista para leer/escribir por JDBC.
     """
     return (SparkSession.builder
             .appName(nombre)
@@ -30,26 +24,22 @@ def crear_sesion(nombre="P2-Spark"):
 
 def _propiedades(usuario, clave):
     """
-    Arma el dict de propiedades JDBC.
-
-    Entradas:
-        usuario (str), clave (str): credenciales de Postgres.
-    Salidas:
-        dict con user, password y driver.
+    F: Arma el dict de propiedades JDBC.
+    E: usuario (str), clave (str): credenciales de Postgres.
+    S: dict con user, password y driver.
     """
     return {"user": usuario, "password": clave, "driver": "org.postgresql.Driver"}
 
 
 def leer_tabla(spark, url, tabla, usuario, clave):
     """
-    Lee una tabla de Postgres como DataFrame.
-
-    Entradas:
+    F: Lee una tabla de Postgres como DataFrame.
+    E:
         spark: SparkSession.
         url (str): URL JDBC (jdbc:postgresql://host:puerto/bd).
         tabla (str): nombre de tabla, o una subconsulta entre parentesis.
         usuario, clave (str): credenciales.
-    Salidas:
+    S:
         DataFrame con el contenido de la tabla.
     """
     return spark.read.jdbc(url=url, table=tabla, properties=_propiedades(usuario, clave))
@@ -57,19 +47,14 @@ def leer_tabla(spark, url, tabla, usuario, clave):
 
 def escribir_tabla(df, url, tabla, usuario, clave, modo="overwrite"):
     """
-    Escribe un DataFrame a una tabla de Postgres.
-
-    Entradas:
+    F: Escribe un DataFrame a una tabla de Postgres.
+    E:
         df: DataFrame a persistir.
         url (str): URL JDBC.
-        tabla (str): tabla destino (ej. 'analytics.tendencias_categoria_mes').
+        tabla (str): tabla destino 
         usuario, clave (str): credenciales.
         modo (str): 'overwrite' (idempotente, recrea) u 'append'.
-    Salidas:
-        Ninguna.
-    Funcionamiento:
-        'overwrite' deja el job idempotente: re-correrlo reemplaza el resultado
-        en vez de duplicarlo (clave para el DAG de Airflow).
+    S: - 
     """
     (df.write
        .jdbc(url=url, table=tabla, mode=modo, properties=_propiedades(usuario, clave)))

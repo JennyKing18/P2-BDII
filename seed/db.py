@@ -10,17 +10,11 @@ from psycopg2.extras import execute_values
 
 def max_id(cur, tabla):
     """
-    Devuelve el mayor id presente en una tabla.
-
-    Entradas:
+    F: Devuelve el mayor id presente en una tabla.
+    E:
         cur: cursor psycopg2 activo.
-        tabla (str): nombre de tabla (interno y confiable, no viene de input
-                     externo, por eso es seguro interpolarlo).
-    Salidas:
-        int: el id maximo, o 0 si la tabla esta vacia.
-    Funcionamiento:
-        Permite continuar la numeracion de ids despues de los datos que ya
-        existan, evitando colisiones con las filas creadas por la API.
+        tabla (str): nombre de tabla 
+    S: int: el id maximo, o 0 si la tabla esta vacia.    
     """
     cur.execute(f"SELECT COALESCE(MAX(id), 0) FROM {tabla}")
     return cur.fetchone()[0]
@@ -28,18 +22,14 @@ def max_id(cur, tabla):
 
 def insertar(cur, sql, filas, page_size=1000):
     """
-    Inserta una lista de filas en lotes.
+    F: Inserta una lista de filas en lotes.
 
-    Entradas:
+    E:
         cur: cursor psycopg2 activo.
         sql (str): INSERT con el marcador %s donde van los VALUES.
         filas (list[tuple]): filas a insertar.
         page_size (int): tamano de lote para execute_values.
-    Salidas:
-        Ninguna.
-    Funcionamiento:
-        execute_values agrupa miles de filas en pocas sentencias (mucho mas
-        rapido que un INSERT por fila). No hace commit; lo hace main.py.
+    S: -           
     """
     if not filas:
         return
@@ -48,18 +38,12 @@ def insertar(cur, sql, filas, page_size=1000):
 
 def resincronizar_secuencias(cur, tablas):
     """
-    Ajusta las secuencias de auto-incremento al maximo id existente.
+    F: Ajusta las secuencias de auto-incremento al maximo id existente.
 
-    Entradas:
+    E:
         cur: cursor psycopg2 activo.
-        tablas (list[str]): tablas cuyas secuencias reajustar (lista interna
-                            y confiable).
-    Salidas:
-        Ninguna.
-    Funcionamiento:
-        Como el seed inserta ids explicitos, la secuencia de Postgres queda
-        atrasada. Sin este ajuste, el proximo INSERT de la API (que usa la
-        secuencia) chocaria con un id ya ocupado. setval la deja en MAX(id).
+        tablas (list[str]): tablas cuyas secuencias reajustar
+    S: -        
     """
     for tabla in tablas:
         cur.execute(

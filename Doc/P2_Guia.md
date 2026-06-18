@@ -1,5 +1,28 @@
 # ⚙️ Updates P2
 
+# ⚙️ Guía de Comandos
+Primero levante el proyecto desde 0 sin volumenes
+```
+docker compose up --build
+docker compose down -v      #limpiar volumenes
+py seed/main.py             #cargar datos
+
+# Crear el esquema de salida
+docker exec -it postgres_db_v2 psql -U <user> -d <db> -c "CREATE SCHEMA IF NOT EXISTS analytics;"
+
+# 3. Correr el análisis (la 1ra vez baja el driver JDBC de Maven)
+docker exec -it spark_p2 spark-submit --packages org.postgresql:postgresql:42.7.3 /home/jovyan/work/jobs/tendencias_consumo.py --url jdbc:postgresql://db:5432/restaurantDB --usuario <tu_usuario> --clave <tu_clave>
+```
+Verificar: 
+
+`
+docker exec -it postgres_db_v2 psql -U admin_jenny -d restaurantDB -c "SELECT count(*) FROM analytics.tendencias_categoria_mes;" `
+
+## 📗Dependencias (mas adelante mover al docker para tenerlo automatico)
+- py -m pip install psycopg2-binary
+- py -m pip install pyspark
+
+# Resumen de Cambios
 Se agregan Modulo de Seed que maneja:
 - Repartidores
 - Recomendaciones
@@ -27,23 +50,3 @@ datos*, y eso es justo lo que ya tenemos como filas:
 - coordenadas en `users`/`restaurants` + `repartidores` → **geonodos** y rutas.
 El cargador de grafo solo necesita la data y sus relaciones; no le importa que
 GORM no las maneje.
-
-# ⚙️ Guía de Comandos
-```
-# 1. Crear el esquema de salida una vez (Spark crea tablas, no esquemas)
-docker exec -it postgres_db_v2 psql -U <user> -d <db> -c "CREATE SCHEMA IF NOT EXISTS analytics;"
-
-# 2. Levantar Spark
-docker compose -f docker-compose.p2.yml up -d spark
-
-# 3. Correr el análisis (la 1ra vez baja el driver JDBC de Maven — tarda ~1 min)
-docker exec -it spark_p2 python /home/jovyan/work/jobs/tendencias_consumo.py `
-  --url jdbc:postgresql://host.docker.internal:5432/<db> `
-  --usuario <user> --clave <pass>
-```
-
-## 📗Dependencias (mas adelante mover al docker para tenerlo automatico)
-- py -m pip install psycopg2-binary
-- py -m pip install pyspark
-
-

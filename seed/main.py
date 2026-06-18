@@ -1,5 +1,5 @@
 """
-main.py — Orquestador del seed del Proyecto 2.
+main.py — Orquestador del seed.
 
 Flujo: conectar -> aplicar esquema P2 -> generar entidades en memoria ->
 insertar por lotes -> resincronizar secuencias -> commit. Imprime un resumen.
@@ -19,7 +19,7 @@ import db
 import schema
 import generadores
 
-# Semilla fija => datasets reproducibles entre corridas y entre companeras
+# Semilla fija => datasets reproducibles entre corridas
 random.seed(42)
 
 # Tamano del escenario (ajustar aqui para mas/menos volumen)
@@ -34,37 +34,27 @@ UMBRAL_GUARD = 10000    # si ya hay mas ordenes que esto, se asume seed aplicado
 
 
 def main():
-    """
-    Punto de entrada: ejecuta el seed completo en una sola transaccion.
-
-    Entradas:
-        Ninguna (argv: --force para saltar el guard).
-    Salidas:
-        Ninguna (imprime un resumen; hace commit o rollback).
-    Funcionamiento:
-        Envuelve todo en try/except: si algo falla, rollback para no dejar la
-        base a medias. El guard evita duplicar datos en corridas repetidas.
-    """
     conn = config.conectar()
     cur = conn.cursor()
     try:
-        # ── Guard anti-duplicados ────────────────────────────────────────
+        # ── Esquema P2 (idempotente)
+        schema.aplicar_esquema(cur)
+        conn.commit()  # persistir el DDL aunque el guard corte después
+
+        # ── Guard anti-duplicados
         if db.max_id(cur, "orders") > UMBRAL_GUARD and "--force" not in sys.argv:
             print("Ya hay datos de seed (>10k ordenes). Usa --force para regenerar.")
             return
 
-        # ── Esquema P2 (idempotente) ─────────────────────────────────────
-        schema.aplicar_esquema(cur)
-
-        # ── Geo a usuarios preexistentes ─────────────────────────────────
+        # ── Geo a usuarios preexistentes
         actualizados = generadores.actualizar_geo_existentes(cur)
 
-        # ── Ids iniciales (continuar despues de lo existente) ────────────
+        # ── Ids iniciales (continuar despues de lo existente) 
         uid = db.max_id(cur, "users") + 1
         rid = db.max_id(cur, "restaurants") + 1
         mid = db.max_id(cur, "menu_items") + 1
 
-        # ── Generacion en memoria ────────────────────────────────────────
+        # ── Generacion en memoria
         rest = generadores.generar_restaurantes_y_menus(uid, rid, mid, N_RESTAURANTES)
         cli = generadores.generar_clientes(rest["uid_siguiente"], N_CLIENTES)
         ordenes = generadores.generar_ordenes(
@@ -77,7 +67,7 @@ def main():
         recomendaciones = generadores.generar_recomendaciones(
             cli["clientes_ids"], N_RECOMENDACIONES)
 
-        # ── Insercion por lotes ──────────────────────────────────────────
+        # ── Insercion por lotes 
         usuarios = rest["admins"] + cli["clientes"]
         db.insertar(cur, """INSERT INTO users
             (id, created_at, updated_at, username, email, password, role,
@@ -100,7 +90,7 @@ def main():
             (usuario_origen, usuario_destino, fecha) VALUES %s
             ON CONFLICT DO NOTHING""", recomendaciones)
 
-        # ── Resincronizar secuencias (insertamos ids explicitos) ─────────
+        # ── Resincronizar secuencias (insertamos ids explicitos) 
         db.resincronizar_secuencias(
             cur, ["users", "restaurants", "menu_items", "orders", "reservations"])
 
