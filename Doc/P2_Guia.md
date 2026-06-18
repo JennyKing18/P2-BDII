@@ -1,6 +1,6 @@
 # ⚙️ Updates P2
 
-# ⚙️ Guía de Comandos
+# ⚙️⚡ Guía de Comandos Spark
 Primero levante el proyecto desde 0 sin volumenes
 ```
 docker compose up --build
@@ -10,8 +10,12 @@ py seed/main.py             #cargar datos
 # Crear el esquema de salida
 docker exec -it postgres_db_v2 psql -U <user> -d <db> -c "CREATE SCHEMA IF NOT EXISTS analytics;"
 
-# 3. Correr el análisis (la 1ra vez baja el driver JDBC de Maven)
+# 3. Correr el análisis (manual, se automatiza con Airflow creo)
 docker exec -it spark_p2 spark-submit --packages org.postgresql:postgresql:42.7.3 /home/jovyan/work/jobs/tendencias_consumo.py --url jdbc:postgresql://db:5432/restaurantDB --usuario <tu_usuario> --clave <tu_clave>
+
+docker exec -it spark_p2 spark-submit --packages org.postgresql:postgresql:42.7.3 /home/jovyan/work/jobs/horarios_pico.py --url jdbc:postgresql://db:5432/restaurantDB --usuario <tu_usuario> 
+
+docker exec -it spark_p2 spark-submit --packages org.postgresql:postgresql:42.7.3 /home/jovyan/work/jobs/crecimiento_mensual.py --url jdbc:postgresql://db:5432/restaurantDB --usuario <tu_usuario> 
 ```
 Verificar: 
 
