@@ -137,6 +137,31 @@ services:
       db:
         condition: service_healthy
     restart: unless-stopped
+ 
+  # -----------------------------------------------------------
+  # ORQUESTADOR APACHE AIRFLOW (Añadido para el Proyecto 2)
+  # -----------------------------------------------------------
+  airflow:
+    image: apache/airflow:2.8.1
+    container_name: airflow_p2
+    user: root # Necesario para que Airflow pueda comunicarse con Spark
+    environment:
+      - AIRFLOW_UID=0
+      - AIRFLOW__CORE__LOAD_EXAMPLES=False # Apaga los ejemplos que trae por defecto
+    ports:
+      - "8081:8080" 
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags 
+      - /var/run/docker.sock:/var/run/docker.sock 
+    command: >
+      bash -c "
+      python -m pip install --no-cache-dir docker requests &&
+      airflow db migrate &&
+      airflow users create --username admin --password admin --firstname Admin --lastname User --role Admin --email admin@example.com &&
+      airflow standalone
+      "
+    profiles: ["analytics"]
+
 
 volumes:
   metabase_data:

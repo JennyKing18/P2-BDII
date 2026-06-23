@@ -1,0 +1,9 @@
+docker cp seed spark_p2:/home/jovyan/work/seed
+
+docker exec -it spark_p2 pip install psycopg2-binary
+
+docker exec -e DB_HOST=db -e DB_USER=admin_jenny -e DB_PASSWORD=abcdef -e DB_NAME=restaurantDB -it spark_p2 python work/seed/main.py
+
+docker exec -it spark_p2 spark-submit --packages org.postgresql:postgresql:42.7.3 /home/jovyan/work/jobs/etl_hive.py --url jdbc:postgresql://db:5432/restaurantDB --usuario admin_jenny --clave abcdef
+
+docker exec -it spark_p2 spark-submit --packages org.postgresql:postgresql:42.7.3 /home/jovyan/work/jobs/verificar_dw.py
