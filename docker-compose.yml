@@ -115,6 +115,9 @@ services:
       - "8888:8888"                     # Jupyter Lab
     volumes:
       - ./spark:/home/jovyan/work       # jobs y notebooks visibles dentro del contenedor
+      - ./routing:/home/jovyan/routing
+    env_file:
+      - .env                            # credenciales DB_USER/DB_PASSWORD/DB_NAME para los jobs
     environment:
       - JUPYTER_ENABLE_LAB=yes
     command: start-notebook.sh --NotebookApp.token=''
@@ -161,6 +164,21 @@ services:
       airflow standalone
       "
     profiles: ["analytics"]
+
+# -----------------------------------------------------------
+  # BASE DE DATOS DE GRAFOS: NEO4J (Proyecto 2)
+  # -----------------------------------------------------------
+  neo4j:
+    image: neo4j:5.15.0
+    container_name: neo4j_p2
+    ports:
+      - "7474:7474" # Interfaz web
+      - "7687:7687" # Puerto interno
+    environment:
+      - NEO4J_AUTH=neo4j/password123
+      - NEO4J_PLUGINS=["apoc"] 
+    profiles: ["analytics"]
+    restart: always
 
 
 volumes:
