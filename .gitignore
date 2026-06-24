@@ -5,3 +5,7 @@
 coverage
 coverage.out
 coverage.html
+spark/seed/
+spark/spark-warehouse/
+**/__pycache__/
+**/.ipynb_checkpoints/
