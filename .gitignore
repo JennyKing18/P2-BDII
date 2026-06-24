@@ -5,7 +5,12 @@
 coverage
 coverage.out
 coverage.html
+
+# Artefactos generados (no se commitean)
 spark/seed/
 spark/spark-warehouse/
+spark/metastore_db/
+metabase/plugins/*.jar
+**/derby.log
 **/__pycache__/
 **/.ipynb_checkpoints/

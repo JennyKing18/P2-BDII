@@ -1,66 +1,85 @@
-# ⚙️ Updates P2
-## Profiles Docker Compose
+# 🚀 Ejecutar el proyecto desde 0 (recién clonado)
+
+**Prerrequisitos:** Docker Desktop **corriendo**, Python 3 (`py`), Git.
+
+```bash
+# 1. Clonar y configurar el entorno
+cp .env.example .env        # llenar DB_USER, DB_PASSWORD, DB_NAME, etc.
+                            # (COMPOSE_PROFILES=app,analytics ya viene seteado)
+
+# 2. Levantar el stack (build de la API Go + pull de imágenes — la 1ra vez tarda)
+docker compose up -d --build
+
+# 3. Dependencias Python (el seed y el ruteo corren desde el host)
+py -m pip install psycopg2-binary folium
+
+# 4. Cargar datos de prueba
+py seed/main.py
+
+# 5. Análisis Spark crudo (esquema analytics + 3 análisis)
+docker exec -it postgres_db_v2 psql -U admin_jenny -d restaurantDB -c "CREATE SCHEMA IF NOT EXISTS analytics;"
+docker exec -it spark_p2 spark-submit --packages org.postgresql:postgresql:42.7.3 /home/jovyan/work/jobs/tendencias_consumo.py --usuario admin_jenny --clave abcdef
+docker exec -it spark_p2 spark-submit --packages org.postgresql:postgresql:42.7.3 /home/jovyan/work/jobs/horarios_pico.py --usuario admin_jenny --clave abcdef
+docker exec -it spark_p2 spark-submit --packages org.postgresql:postgresql:42.7.3 /home/jovyan/work/jobs/crecimiento_mensual.py --usuario admin_jenny --clave abcdef
+
+# 6. Data Warehouse (Hive) + servirlo para Metabase
+docker exec -it spark_p2 spark-submit --packages org.postgresql:postgresql:42.7.3 /home/jovyan/work/jobs/etl_hive.py --usuario admin_jenny --clave abcdef
+docker compose --profile dw up -d spark-thrift     # OJO: no correr el ETL mientras esto esté arriba
+
+# 7. Neo4j (grafo co-compra + recomendaciones)
+docker exec -it spark_p2 pip install neo4j psycopg2-binary
+docker exec -e DB_HOST=db -e DB_USER=admin_jenny -e DB_PASSWORD=abcdef -e DB_NAME=restaurantDB -it spark_p2 python /home/jovyan/work/jobs/neo4j_grafos.py
+
+# 8. Enrutamiento (rutas + mapa)
+py routing/main.py          # genera routing/rutas.html y analytics.asignaciones_entrega
 ```
-Diario (app + analytics, sin los 11 nodos de Mongo) — usa el default del .env
-docker compose up -d
 
-# Solo analítica (db + spark + metabase)
-docker compose --profile analytics up -d 
+**9. Conectar las visualizaciones en Metabase** (localhost:3000 → crear cuenta admin):
+- **PostgreSQL** → host `db`, port `5432`, db `restaurantDB`, user/pass del `.env` (tablas `analytics.*` + mapa de `users`).
+- **Spark SQL** → host `spark-thrift`, port `10000`, db `restaurant_dw`, user `spark` (el DW Hive).
 
-# todos los demas servicios son parte de --profile app
+**Accesos:**
+| Servicio | URL |
+|---|---|
+| API (vía Nginx) | http://localhost:8000 |
+| Keycloak | http://localhost:8082 |
+| Metabase | http://localhost:3000 |
+| Jupyter (Spark) | http://localhost:8888 |
+| Airflow | http://localhost:8081 (admin/admin) |
+| Neo4j Browser | http://localhost:7474 (neo4j/password123) |
+| Spark Thrift (JDBC) | localhost:10000 |
 
-```
-# ⚙️⚡ Guía de Comandos Spark
-Primero levante el proyecto desde 0 sin volumenes
-```
-docker compose up --build
-docker compose down -v      #limpiar volumenes
-py seed/main.py             #cargar datos
+> Para apagar todo: `docker compose --profile dw --profile analytics down` (agregá `-v` para borrar volúmenes/datos).
 
-# Crear el esquema de salida
-docker exec -it postgres_db_v2 psql -U <user> -d <db> -c "CREATE SCHEMA IF NOT EXISTS analytics;"
+---
 
-# 3. Correr el análisis (manual, se automatiza con Airflow creo)
-docker exec -it spark_p2 spark-submit --packages org.postgresql:postgresql:42.7.3 /home/jovyan/work/jobs/tendencias_consumo.py --url jdbc:postgresql://db:5432/restaurantDB --usuario <tu_usuario> --clave <tu_clave>
 
-docker exec -it spark_p2 spark-submit --packages org.postgresql:postgresql:42.7.3 /home/jovyan/work/jobs/horarios_pico.py --url jdbc:postgresql://db:5432/restaurantDB --usuario <tu_usuario> 
-
-docker exec -it spark_p2 spark-submit --packages org.postgresql:postgresql:42.7.3 /home/jovyan/work/jobs/crecimiento_mensual.py --url jdbc:postgresql://db:5432/restaurantDB --usuario <tu_usuario> 
-```
-Verificar: 
+# ⚡Comandos Spark
+Verificar que el spark crudo funcione: 
 
 `
 docker exec -it postgres_db_v2 psql -U admin_jenny -d restaurantDB -c "SELECT count(*) FROM analytics.tendencias_categoria_mes;" `
 
+##  🧠 Metabase + DW (Hive vía Spark Thrift)
+Usando**Spark Thrift Server** que expone el DW por JDBC. Metabase lo consulta con su driver Spark SQL (nativo en v0.50). El `spark/conf/hive-site.xml` fija el metastore a una ruta persistida y
+compartida entre el ETL y el Thrift Server.
+
+```
+# 1. Construir el DW (con el thrift APAGADO)
+docker exec -it spark_p2 spark-submit --packages org.postgresql:postgresql:42.7.3 \
+  /home/jovyan/work/jobs/etl_hive.py --usuario <user> --clave <pass>
+
+# 2. Levantar el Thrift Server (sirve el DW en :10000)
+docker compose --profile dw up -d spark-thrift
+
+# 3. (opcional) probar el DW sin Metabase
+docker exec -it spark_thrift_p2 /usr/local/spark/bin/beeline \
+  -u "jdbc:hive2://localhost:10000" -e "USE restaurant_dw; SHOW TABLES;"
+```
+Conexión en Metabase: **Add database → Spark SQL** → host `spark-thrift`, port `10000`,
+database `restaurant_dw`, user `spark` (sin password).
+
 ## 📗Dependencias (mas adelante mover al docker para tenerlo automatico)
 - py -m pip install psycopg2-binary
+- py -m pip install folium psycopg2-binary
 - py -m pip install pyspark
-
-# Resumen de Cambios
-Se agregan Modulo de Seed que maneja:
-- Repartidores
-- Recomendaciones
-- data de 8 meses para spark (random)
-
-Ambas entidades se mantienen fuera del Modelo por desición técnica. Agregarlas al modelo implicaría escribir esta funcionalidad para las repos de Mongo y Postgres, su respectiva migración y afectaría el coverage actual. Tal que existen como tablas dentro de la BD sin que el GORM sepa de ellas. (Por ello no se puede hacer CRUD de estas).
-
-Esto implica que solo podemos cambiar-interactuar con ellas por medio de SQL puro o scripts (no tienen ruta), sin embargo, la data SI esta conectada es el caso de ´recomendaciones´ por medio de ´FK a users´. Mientras que ´repartidores´ solo comparte "geografía" no se conecta con BD. 
-
-## ¿Por qué esta arquitectura funciona para Neo4j y OLAP?
-
-La clave es que **Neo4j y OLAP son capas analíticas de solo lectura**: no
-necesitan CRUD ni la API, solo leer los datos. Por eso mantener las nuevas
-entidades fuera del modelo GORM no les cuesta nada.
-
-Todo (tablas P1 + extensiones P2) vive en el mismo
-PostgreSQL. Así Airflow extrae de un solo lugar, Spark lee por JDBC y el cargador
-de Neo4j toma todo de la misma BD, sin servicios ni conectores extra.
-
-**Para Neo4j (relaciones):** un grafo se arma a partir de *relaciones entre
-datos*, y eso es justo lo que ya tenemos como filas:
-- `orders` agrupadas en sesiones (mismo cliente + restaurante + momento) → arista
-  de **co-compra** entre productos.
-- `recomendaciones` con FK a `users` → arista **usuario→recomienda→usuario**.
-- coordenadas en `users`/`restaurants` + `repartidores` → **geonodos** y rutas.
-El cargador de grafo solo necesita la data y sus relaciones; no le importa que
-GORM no las maneje.
