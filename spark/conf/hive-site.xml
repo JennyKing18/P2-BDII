@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+<!--
+  hive-site.xml — Fija el metastore Hive a una ubicacion PERSISTENTE y COMPARTIDA.
+
+  Problema que resuelve: por defecto Spark (enableHiveSupport) crea el metastore
+  Derby en el CWD del proceso, dentro del contenedor → se pierde al reiniciar y
+  no lo ve el Thrift Server. Aqui lo clavamos en /home/jovyan/work/metastore_db
+  (montado desde ./spark, asi persiste y lo comparten el ETL y el Thrift Server).
+
+  Limitacion: Derby embebido es de UN solo escritor. El ETL (spark_p2) y el
+  Thrift Server NO pueden tener el metastore abierto a la vez. Flujo: construir
+  el DW con el ETL -> luego levantar spark-thrift para servirlo.
+-->
+<configuration>
+  <property>
+    <name>javax.jdo.option.ConnectionURL</name>
+    <value>jdbc:derby:;databaseName=/home/jovyan/work/metastore_db;create=true</value>
+  </property>
+  <property>
+    <name>javax.jdo.option.ConnectionDriverName</name>
+    <value>org.apache.derby.jdbc.EmbeddedDriver</value>
+  </property>
+  <property>
+    <name>hive.metastore.warehouse.dir</name>
+    <value>/home/jovyan/work/spark-warehouse</value>
+  </property>
+</configuration>

@@ -116,6 +116,7 @@ services:
     volumes:
       - ./spark:/home/jovyan/work       # jobs y notebooks visibles dentro del contenedor
       - ./routing:/home/jovyan/routing
+      - ./spark/conf/hive-site.xml:/usr/local/spark/conf/hive-site.xml  # metastore persistente compartido
     env_file:
       - .env                            # credenciales DB_USER/DB_PASSWORD/DB_NAME para los jobs
     environment:
@@ -134,11 +135,36 @@ services:
       - "3000:3000"
     volumes:
       - metabase_data:/metabase.data
+      - ./metabase/plugins:/plugins      # driver Spark SQL para conectar al DW (Thrift)
     environment:
       - MB_DB_FILE=/metabase.data/metabase.db
     depends_on:
       db:
         condition: service_healthy
+    restart: unless-stopped
+
+  # -----------------------------------------------------------
+  # SPARK THRIFT SERVER — expone el DW (Hive) por JDBC para Metabase
+  # Profile 'dw' aparte: solo se levanta para SERVIR el DW (no convive con el ETL
+  # porque comparten el metastore Derby de un solo escritor).
+  # -----------------------------------------------------------
+  spark-thrift:
+    image: jupyter/pyspark-notebook:spark-3.5.0
+    container_name: spark_thrift_p2
+    profiles: ["dw"]
+    ports:
+      - "10000:10000"   # HiveServer2 / Spark SQL (JDBC)
+    volumes:
+      - ./spark:/home/jovyan/work
+      - ./spark/conf/hive-site.xml:/usr/local/spark/conf/hive-site.xml
+    command: >
+      bash -lc "/usr/local/spark/bin/spark-submit
+      --class org.apache.spark.sql.hive.thriftserver.HiveThriftServer2
+      --master local[*]
+      --conf spark.sql.warehouse.dir=/home/jovyan/work/spark-warehouse
+      --hiveconf hive.server2.thrift.port=10000
+      --hiveconf hive.server2.thrift.bind.host=0.0.0.0
+      spark-internal"
     restart: unless-stopped
  
   # -----------------------------------------------------------
