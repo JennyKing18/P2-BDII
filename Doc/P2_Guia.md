@@ -83,3 +83,26 @@ database `restaurant_dw`, user `spark` (sin password).
 - py -m pip install psycopg2-binary
 - py -m pip install folium psycopg2-binary
 - py -m pip install pyspark
+
+# 🔎 Comandos de verificar
+Thrift Server arriba
+```
+docker exec spark_thrift_p2 /usr/local/spark/bin/beeline -u "jdbc:hive2://localhost:10000/restaurant_dw" -e "SHOW TABLES;"
+
+# Apagar Thrift
+docker stop spark_thrift_p2
+
+# Encender Thrift
+docker start spark_thrift_p2
+
+# Apagar Airflow (no es necesario para el ETL, pero si querés)
+docker stop airflow_p2
+
+# Encender Airflow
+docker start airflow_p2
+```
+
+Datos Folium
+```
+docker exec postgres_db_v2 psql -U admin_jenny -d restaurantDB -c "SELECT * FROM analytics.asignaciones_entrega LIMIT 20;" 
+```
