@@ -1,14 +1,12 @@
 """
 neo4j_caminos.py — Caminos mínimos entre ubicaciones para reparto eficiente.
 
-Idea:
-  1. Se traen las ubicaciones reales desde Postgres: repartidores activos
-     (puntos de partida) y clientes con pedidos (puntos de entrega).
-  2. Se construye en Neo4j una RED DE CERCANÍA: cada ubicación se conecta a sus
-     K vecinos más cercanos con una arista :CONECTA ponderada por la distancia
-     en km (fórmula de haversine). Al no ser un grafo completo, ir de A a C puede
-     ser más corto pasando por B -> ahí el "camino mínimo" tiene sentido real.
-  3. Se calcula el camino de menor distancia con Dijkstra (apoc.algo.dijkstra).
+Se traen las ubicaciones reales desde Postgres: repartidores activos
+(puntos de partida) y clientes con pedidos (puntos de entrega).
+Luego se construye en Neo4j una RED DE CERCANÍA: cada ubicación se conecta a sus
+K vecinos más cercanos con una arista :CONECTA ponderada por la distancia
+en km (fórmula de haversine). 
+Se calcula el camino de menor distancia con Dijkstra.
 
 Requiere el plugin APOC en Neo4j (ya activo: NEO4J_PLUGINS=["apoc"]).
 """
@@ -103,7 +101,7 @@ def main():
 
     driver = GraphDatabase.driver(NEO4J_URI, auth=(NEO4J_USER, NEO4J_PASS))
     with driver.session() as s:
-        # Subgrafo dedicado: solo borramos :Ubicacion (no toca el grafo de consumo)
+       
         print("Reconstruyendo grafo de ubicaciones en Neo4j...")
         s.run("MATCH (n:Ubicacion) DETACH DELETE n")
         s.run("CREATE INDEX ubicacion_id IF NOT EXISTS FOR (u:Ubicacion) ON (u.id)")

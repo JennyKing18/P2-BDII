@@ -3,7 +3,7 @@ import psycopg2
 from neo4j import GraphDatabase
 
 # ==========================================
-# 1. CONFIGURACIÓN DE CONEXIONES
+# CONFIGURACIÓN DE CONEXIONES
 # ==========================================
 PG_HOST = os.getenv("DB_HOST", "db")
 PG_PORT = "5432"
@@ -23,7 +23,7 @@ def main():
 
     with neo_driver.session() as session:
         # ==========================================
-        # 2. LIMPIEZA Y MODELADO DEL GRAFO
+        # LIMPIEZA Y MODELADO DEL GRAFO
         # ==========================================
         print("Limpiando grafo anterior...")
         session.run("MATCH (n) DETACH DELETE n")
@@ -49,9 +49,7 @@ def main():
         """, productos=productos)
 
         print("Migrando Pedidos / Canastas (Usuario -> Pedido -> Productos)...")
-        # En 'orders' cada fila es UN producto. Para detectar productos comprados juntos,
-        # agrupamos como una misma canasta (Order) todas las filas del mismo usuario en el
-        # mismo instante (created_at). Así un Order puede contener varios productos.
+        
         pg_cur.execute("""
             SELECT user_id, created_at, menu_item_id
             FROM orders
@@ -83,7 +81,7 @@ def main():
         """, recomendaciones=recomendaciones)
 
         # ==========================================
-        # 3. EJECUTAR LAS CONSULTAS SOLICITADAS EN EL PDF
+        # EJECUTAR LAS CONSULTAS SOLICITADAS 
         # ==========================================
         print("\n--- 1. LOS 5 PRODUCTOS MÁS COMPRADOS JUNTOS (Patrones de Co-compra) ---")
         q1 = session.run("""

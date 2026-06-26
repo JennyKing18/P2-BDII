@@ -1,14 +1,9 @@
 """
 verificar_dw.py — Comprobacion de solo lectura del Data Warehouse.
 
-No modifica nada: lista tablas, cuenta filas de dims/hechos y ejecuta las 5
-vistas OLAP para confirmar que devuelven datos (CREATE VIEW solo valida el SQL,
-no garantiza resultados). Sirve como evidencia de que el DW funciona.
+ lista tablas, cuenta filas de dims/hechos y ejecuta las 5
+vistas OLAP para confirmar que devuelven datos. Sirve como evidencia de que el DW funciona.
 
-Uso:
-    docker exec -it spark_p2 spark-submit \
-        --packages org.postgresql:postgresql:42.7.3 \
-        /home/jovyan/work/jobs/verificar_dw.py
 """
 from pyspark.sql import SparkSession
 
